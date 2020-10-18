@@ -89,7 +89,7 @@ usb_init:
 	ld	iy,ti.flags
 	call	libload_load
 	ld	iy,ti.flags
-	jq	nz,usb_not_available
+	jq	nz,usb_not_available.libload
 
 	ld	bc,4
 	push	bc
@@ -394,7 +394,7 @@ usb_detach:						; detach the fat library hooks
 	or	a,a
 	sbc	hl,hl
 	ld	(scroll_amount),hl
-	bit	setting_special_directories,(iy + settings_flag)
+	bit	setting_special_directories,(iy + settings_adv_flag)
 	jr	z,.no_apps_dir
 	inc	hl
 .no_apps_dir:
@@ -420,8 +420,9 @@ usb_invaliddevice:
 	jq	usb_not_available.wait
 
 usb_not_available:
-	call	gui_draw_core
 	call	usb_detach_only
+.libload:
+	call	gui_draw_core
 	set_normal_text
 	print	string_usb_info_0, 10, 30
 	print	string_usb_info_1, 10, 50

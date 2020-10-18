@@ -138,7 +138,7 @@ find_programs:
 	and	a,$1f				; bitmask off bits 7-5 to get type only.
 	cp	a,ti.ProgObj			; check if program
 	jr	z,.normal_program
-	cp	a,ti.ProtProgObj			; check if protected progrm
+	cp	a,ti.ProtProgObj		; check if protected progrm
 	jp	nz,.skip_program
 .normal_program:				; at this point, hl -> [t], so we'll move back six bytes to [nl]
 	dec	hl
@@ -198,7 +198,8 @@ find_programs:
 	jr	z,.not_valid
 	cp	a,27				; hidden?
 	jr	nc,.not_hidden
-	add	a,64				; i honestly have no idea why this has to be here, but it does
+	bit	setting_hide_hidden,(iy + settings_flag)
+	jq	nz,.not_valid
 .not_hidden:
 	inc	hl
 	ex	de,hl
@@ -208,8 +209,8 @@ item_locations_ptr := $-3			; this is the location to store the pointers to vat 
 	inc	hl
 	inc	hl
 	inc	hl
-.file_type := $+1
 	ld	(hl),0
+.file_type := $-1
 	inc	hl				; 4 bytes per entry - pointer to name + type of program
 	ld	(item_locations_ptr),hl
 	ex	de,hl
@@ -226,11 +227,12 @@ item_locations_ptr := $-3			; this is the location to store the pointers to vat 
 .skip_name:
 	ld	e,(hl)				; put name length in e to skip
 	inc	e				; add 1 to go to [t] of next entry
+	or	a,a
 	sbc	hl,de
 	jp	.loop
 
 find_app_directory:
-	bit	setting_special_directories,(iy + settings_flag)
+	bit	setting_special_directories,(iy + settings_adv_flag)
 	ret	z
 	ld	hl,(item_locations_ptr)
 	ld	de,find_application_directory_name
@@ -244,7 +246,7 @@ find_app_directory:
 	ret
 
 find_usb_directory:
-	bit	setting_enable_usb,(iy + settings_flag)
+	bit	setting_enable_usb,(iy + settings_adv_flag)
 	ret	z
 	ld	hl,(item_locations_ptr)
 	ld	de,find_usb_directory_name
@@ -296,7 +298,7 @@ find_apps:
 	ld	(item_locations_ptr),hl
 	jr	.loop
 
-find_data_ptr:				; gets a pointer to the data of an archived program
+find_data_ptr:					; gets a pointer to the data
 	cp	a,$d0
 	ex 	de,hl
 	ret	nc
@@ -322,7 +324,7 @@ find_check_apps:
 	ld	a,(hl)
 	tst	a,4
 	jr	nz,.skip
-	res	setting_special_directories,(iy + settings_flag)
+	res	setting_special_directories,(iy + settings_adv_flag)
 	ret
 .skip:
 	set	cesium_is_nl_disabled,(iy + cesium_flag)

@@ -33,13 +33,13 @@ view_vat_items:
 	set_normal_text
 	compare_hl_zero
 	jr	nz,.can_view
-	ld	a,(iy + settings_flag)
+	ld	a,(iy + settings_adv_flag)
 	and	a,(1 shl setting_special_directories) or (1 shl setting_enable_usb)
 	jr	nz,.can_view				; can't show anything
 	call	gui_draw_static_options
 	ld	hl,sprite_egg
 	draw_sprite_2x 120, 57
-	print	string_new_prgm, 199, 194
+	print	string_new_prgm, 199, 195
 	ld	de,287
 .no_new:
 	ld	(lcd_x),de
@@ -390,7 +390,7 @@ tmp_y := $-1
 	print string_locked, 199, 129
 	print string_hidden, 199, 140
 
-	print string_rename, 199, 194
+	print string_rename, 199, 195
 	ld	de,262
 	ld	(lcd_x),de
 	inc	hl
@@ -398,11 +398,11 @@ tmp_y := $-1
 
 	bit	prgm_locked,(iy + prgm_flag)
 	jr	nz,.is_locked
-	print	string_edit_prgm, 199, 183
+	print	string_edit_prgm, 199, 184
 	ld	de,269
 	jr	.no_new
 .is_locked:
-	print	string_new_prgm, 199, 183
+	print	string_new_prgm, 199, 184
 	ld	de,287
 .no_new:
 	ld	(lcd_x),de

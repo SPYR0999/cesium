@@ -29,17 +29,28 @@
 hook_token_stop := $d9 - $ce
 hook_parser:
 	db	$83			; hook signifier
+	push	af
 	cp	a,2
-	jr	z,.maybe_stop
+	jq	z,.maybe_stop
+.chain:
+	ld	a,(ti.appErr2)
+	cp	a,$7f
+	jq	nz,.no_chain
+	pop	af
+	ld	ix,(ti.appErr2 + 1)
+	jp	(ix)
+.no_chain:
+	pop	af
 	xor	a,a
 	ret
 .maybe_stop:
 	ld	a,hook_token_stop	; check if stop token
 	cp	a,b
+	jq	nz,.chain
+.stop:
+	pop	af
 	ld	a,ti.E_AppErr1
-	jp	z,ti.JError
-	xor	a,a
-	ret
+	jq	ti.JError
 
 hook_app_change:
 	db	$83
@@ -108,6 +119,21 @@ hook_get_key:
 	jq	z,hook_clear_backup
 	cp	a,ti.sk2
 	jq	z,hook_restore_ram
+	cp	a,ti.skStore
+	jq	z,hook_invert_colors
+	ret
+
+hook_invert_colors:
+	push	hl
+	ld	hl,$F80818
+	ld	(hl),h
+	ld	(hl),$44
+	ld	(hl),$21
+	ld	l,h
+	ld	(hl),$01
+	pop	hl
+	xor	a,a
+	inc	a
 	ret
 
 label_number := ti.cursorImage + 3
@@ -418,13 +444,15 @@ hook_show_labels:
 .loopdisplay:
 	ld	a,(ti.curCol)
 	cp	a,$19
-	jr	z,.leftedge
+	jr	z,.leftedgepop
 	ld	a,(hl)
 	inc	hl
 	call	ti.PutC
 	djnz	.loopdisplay
 	pop	hl
 	jr	.displayline
+.leftedgepop:
+	pop	hl
 .leftedge:
 	ld	a,(ti.curRow)
 	inc	a
@@ -684,6 +712,63 @@ hook_home:
 	dl	$f8
 	dl	$f8
 	db	0
+
+hook_chain_parser:
+	xor	a,a
+	ld	(ti.appErr2),a
+	bit	ti.parserHookActive,(iy + ti.hookflags4)
+	jq	z,.no_chain
+	ld	hl,(ti.parserHookPtr)
+	ld	de,hook_parser
+	or	a,a
+	sbc	hl,de
+	add	hl,de
+	jq	z,.check_if_bad_exit
+.chain_hooks:
+	ld	a,(hl)
+	cp	a,$83
+	jq	nz,.no_chain
+	ex	de,hl
+	inc	de
+	ld	hl,ti.appErr2
+	ld	(hl),$7f
+	inc	hl
+	ld	(hl),de
+	jq	.no_chain
+.check_if_bad_exit:
+	ld	hl,ti.appErr2
+	ld	a,(hl)
+	cp	a,$7f
+	jq	nz,.no_chain
+	inc	hl
+	ld	hl,(hl)
+	dec	hl
+	jq	.chain_hooks
+.no_chain:
+	ld	hl,hook_parser
+	jq	ti.SetParserHook
+
+hook_restore_parser:
+	bit	ti.parserHookActive,(iy + ti.hookflags4)
+	jq	z,.clear_parser
+	ld	hl,(ti.parserHookPtr)
+	ld	de,hook_parser
+	or	a,a
+	sbc	hl,de
+	add	hl,de
+	ret	nz
+	ld	hl,ti.appErr2
+	ld	a,(hl)
+	cp	a,$7f
+	jq	nz,.clear_parser
+	inc	hl
+	ld	hl,(hl)
+	dec	hl
+	xor	a,a
+	ld	(ti.appErr2),a
+	jq	ti.SetParserHook
+.clear_parser:
+	jq	ti.ClrParserHook
 
 helper_vputs_toolbar:
 	di

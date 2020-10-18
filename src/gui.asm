@@ -55,17 +55,58 @@ gui_draw_core:
 	draw_rectangle 1, 1, 319, 21
 	draw_rectangle_outline 1, 22, 318, 223
 	set_inverted_text
-	print string_cesium, 15, 7
-	draw_sprite sprite_battery, 3, 7
+	print string_cesium, 5, 7
+	bit	setting_show_battery,(iy + settings_flag)
+	ret	z
+	call	ti.usb_IsBusPowered
+	ld	a,$e5
+	jr	nz,.draw_battery
 	ld	a,0
 battery_status := $-1
-	sub	a,5
-	cpl
+	or	a,a
+	ld	a,$e8
+	jr	z,.draw_battery
+	ld	a,$95
+.draw_battery:
+	draw_rectangle_outline_color 290, 5, 314, 15
+	draw_vert 289, 7, 7
+	draw_vert 288, 9, 3
+	ld	(vRamBuffer + (291) + (320*6)),a
+	ld	(vRamBuffer + (291) + (320*14)),a
+	ld	(vRamBuffer + (313) + (320*6)),a
+	ld	(vRamBuffer + (313) + (320*14)),a
+	ld	a,(color_secondary)
+	ld	(vRamBuffer + (290) + (320*5)),a
+	ld	(vRamBuffer + (290) + (320*15)),a
+	ld	(vRamBuffer + (314) + (320*5)),a
+	ld	(vRamBuffer + (314) + (320*15)),a
+	ld	a,(battery_status)
 	or	a,a
 	ret	z
-	ld	bc,4
-	ld	de,(ti.lcdWidth * 8) + 7
-	jp	lcd_rectangle.computed
+	dec	a
+	jr	z,.battery_1
+	dec	a
+	jr	z,.battery_2
+	dec	a
+	jr	z,.battery_3
+	ld	a,$25
+	draw_vert 292, 8, 5
+	ld	a,$25
+	draw_rectangle_color 293, 7, 295 + 1, 13 + 1
+.battery_3:
+	ld	a,$25
+	draw_rectangle_color 297, 7, 299 + 1, 13 + 1
+	ld	a,$25
+	draw_rectangle_color 301, 7, 303 + 1, 13 + 1
+.battery_2:
+	ld	a,$25
+	draw_rectangle_color 305, 7, 307 + 1, 13 + 1
+.battery_1:
+	ld	a,$25
+	draw_rectangle_color 309, 7, 311 + 1, 13 + 1
+	ld	a,$25
+	draw_vert 312, 8, 5
+	ret
 
 gui_draw_cesium_info:
 	call	gui_draw_core
@@ -335,24 +376,12 @@ gui_draw_usb_item_options:
 	ret
 
 gui_show_item_count:
-	bit	setting_list_count,(iy + settings_flag)
-	ret	z
 	ld	hl,(number_of_items)
-	bit	setting_special_directories,(iy + settings_flag)
-	jr	z,.no_extra_directories
-	dec	hl
-	ld	a,(current_screen)
-	cp	a,screen_apps
-	jr	nz,.no_extra_directories
-	dec	hl
-	jr	.show
-.no_extra_directories:
-	bit	setting_enable_usb,(iy + settings_flag)
-	jr	z,.show
-	dec	hl
+	bit	setting_list_count,(iy + settings_adv_flag)
+	ret	z
 .show:
 	push	hl
-	set_cursor 195, 7
+	set_cursor item_count_x, item_count_y
 	set_inverted_text
 	call	lcd_num_4
 	pop	hl
@@ -362,6 +391,9 @@ gui_fixup_sprites:
 	ld	a,(color_senary)
 	ld	hl,sprite_directory_mask
 	ld	de,sprite_directory + 2
+	call	.fix
+	ld	hl,sprite_usb_mask
+	ld	de,sprite_usb + 2
 	call	.fix
 	ld	hl,sprite_file_mask
 	ld	de,sprite_file_ice + 2

@@ -38,12 +38,22 @@ sort_vat_entry_new_loc := ti.mpLcdCrsrImage + 9
 sort_vat_entry_temp_end := ti.mpLcdCrsrImage + 12 + 15
 
 sort_vat:
-	res	sort_first_item_found,(iy + ti.asm_Flag1)
+	ld	iy,ti.flags
+	ld	a,(iy + sort_flag)
+	push	af
+	call	sort_vat_internal
+	pop	af
+	ld	(iy + sort_flag),a
+	ret
+
+sort_vat_internal:
+	res	sort_first_item_found,(iy + sort_flag)
 	ld	hl,(ti.progPtr)
 .sort_next:
 	call	.find_next_item
 	ret	nc
-	bit	sort_first_item_found,(iy + ti.asm_Flag1)
+.found_item:
+	bit	sort_first_item_found,(iy + sort_flag)
 	jp	z,.first_found
 	push	hl
 	call	.skip_name
@@ -126,7 +136,7 @@ sort_vat:
 	jp	.sort_next
 
 .first_found:
-	set	sort_first_item_found,(iy + ti.asm_Flag1)
+	set	sort_first_item_found,(iy + sort_flag)
 	ld	(sort_first_item_found_ptr),hl		; to make it only execute once
 	call	.skip_name
 	ld	(sort_end_of_part_ptr),hl
@@ -240,5 +250,5 @@ sort_vat:
 	ret
 
 sort_types:
-	db	ti.ProgObj, ti.ProtProgObj, ti.AppVarObj	; types to sort
+	db	ti.ProgObj, ti.ProtProgObj, ti.AppVarObj
 .length := $-.

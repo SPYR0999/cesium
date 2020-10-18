@@ -28,9 +28,8 @@
 
 include 'fasmg-ez80/ez80.inc'
 include 'fasmg-ez80/tiformat.inc'
-format ti executable 'CESIUM'
+format ti archived executable protected program 'CESIUM'
 include 'app.inc'
-;include 'fasmg-ez80/symbol_table.inc' ; used for debugging
 include 'ti84pceg.inc'
 
 macro relocate? name, address*
@@ -123,6 +122,14 @@ macro draw_rectangle_outline? Lx, Ty, Rx, By
 	call	lcd_rectangle_outline.computed
 end macro
 
+macro draw_rectangle_outline_color? Lx, Ty, Rx, By
+	ld	bc,Rx - Lx + 1
+	ld	d,By - Ty + 1
+	ld	e,Ty
+	ld	hl,Lx
+	call	lcd_rectangle_outline.color
+end macro
+
 macro draw_rectangle_color? Lx, Ty, Rx, By
 	call	util_set_primary
 	draw_rectangle Lx, Ty, Rx, By
@@ -184,6 +191,12 @@ macro draw_highlightable_option? Lx, Ty, index
 	call	gui_draw_highlightable_option
 end macro
 
+macro draw_highlighted_option? Lx, Ty, index
+	xor	a,a
+	inc	a
+	draw_highlightable_option Lx, Ty, index
+end macro
+
 ; general
 
 cesium_execution_base := $d09466
@@ -223,16 +236,20 @@ password_max_length := 10
 
 settings_flag := $22
 setting_basic_indicator := 0
-setting_list_count := 1
-setting_clock := 2
+setting_clock := 1
+setting_show_battery := 2
 setting_ram_backup := 3
-setting_special_directories := 4
+setting_hide_hidden := 4
 setting_enable_shortcuts := 5
 setting_delete_confirm := 6
-setting_enable_usb := 7
 
-settings_appvar_size := 30
-setting_config_default := (1 shl setting_list_count) or (1 shl setting_special_directories) or (1 shl setting_enable_shortcuts) or (1 shl setting_delete_confirm)
+settings_adv_flag := $21
+setting_special_directories := 0
+setting_list_count := 1
+setting_enable_usb := 2
+
+settings_default := (1 shl setting_show_battery) or (1 shl setting_enable_shortcuts) or (1 shl setting_delete_confirm) or (1 shl setting_basic_indicator)
+settings_adv_default := (1 shl setting_enable_usb) or (1 shl setting_special_directories)
 
 ; sorting flags
 
@@ -256,9 +273,9 @@ scroll_down_available := 1
 scroll_up_available := 2
 item_renaming := 3
 item_is_directory := 4
-item_set_editor := 5
-item_is_ti := 6
-item_is_prgm := 7
+item_is_ti := 5
+item_is_prgm := 6
+item_is_hidden := 7
 
 prgm_flag := $30
 prgm_archived := 0
@@ -276,8 +293,10 @@ temp_prgm_is_usb_directory := 4
 
 ; location of items
 
-clock_x := 255
+clock_x := 230
 clock_y := 7
+item_count_x := 160
+item_count_y := 7
 
 ; return flags
 
@@ -305,7 +324,8 @@ setting_color_quaternary := setting_color_tertiary + 1
 setting_color_quinary := setting_color_quaternary + 1
 setting_color_senary := setting_color_quinary + 1
 setting_config := setting_color_senary + 1
-setting_brightness := setting_config + 1
+setting_adv_config := setting_config + 1
+setting_brightness := setting_adv_config + 1
 setting_editor_name := setting_brightness + 1
 setting_password := setting_editor_name + 10
 current_option_selection := setting_password + password_max_length + 1

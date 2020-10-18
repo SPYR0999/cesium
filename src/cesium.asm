@@ -27,7 +27,7 @@
 ; POSSIBILITY OF SUCH DAMAGE.
 
 cesium_name := 'Cesium'
-cesium_version := '3.2.3'
+cesium_version := '3.3.1'
 cesium_copyright := '(C)  2015-2020 Matt Waltz'
 
 include 'include/macros.inc'
@@ -51,7 +51,6 @@ relocate cesium_code, cesium_execution_base
 	include 'view-usb.asm'
 	include 'features.asm'
 	include 'settings.asm'
-	include 'password.asm'
 	include 'execute.asm'
 	include 'squish.asm'
 	include 'gui.asm'
